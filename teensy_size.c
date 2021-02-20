@@ -67,6 +67,8 @@ int main(int argc, char **argv)
 
 	if (model == 0x24 || model == 0x25 || model == 26) {
 
+		uint32_t text_headers = elf_section_size(".text.headers");
+		uint32_t text_code = elf_section_size(".text.code");
 		uint32_t text_progmem = elf_section_size(".text.progmem");
 		uint32_t text_itcm = elf_section_size(".text.itcm");
 		uint32_t arm_exidx = elf_section_size(".ARM.exidx");
@@ -75,11 +77,12 @@ int main(int argc, char **argv)
 		uint32_t bss_dma = elf_section_size(".bss.dma");
 		uint32_t text_csf = elf_section_size(".text.csf");
 
-		uint32_t flash_total = text_progmem + text_itcm + arm_exidx + data + text_csf;
+		uint32_t flash_total = text_headers + text_code + text_progmem
+			+ text_itcm + arm_exidx + data + text_csf;
 		//float flash_percent = (float)(flash_total * 100) / (float)flash_size(model);
-		uint32_t flash_headers = 4140 + text_csf;
-		uint32_t flash_code = text_progmem - 4140 + text_itcm + arm_exidx;
-		uint32_t flash_data = data;
+		uint32_t flash_headers = text_headers + text_csf;
+		uint32_t flash_code = text_code + text_itcm + arm_exidx;
+		uint32_t flash_data = text_progmem + data;
 
 		uint32_t itcm = text_itcm + arm_exidx;
 		uint32_t itcm_blocks = (itcm + 0x7FFF) >> 15;
