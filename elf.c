@@ -90,90 +90,75 @@ static inline uint32_t get_32(const unsigned char **ptr)
 }
 
 
-// inspect the symbol table, counting the interrupt vectors
-int elf_teensy_model_id(const unsigned char *elf)
+
+
+int elf_get_symbol(const char *name, uint32_t *value)
 {
-	const elf_section_t *symtab_section, *strtab_section;
+	static const elf_section_t *symtab_section=NULL, *strtab_section=NULL;
 	const unsigned char *p, *section_begin, *section_end;
-	const char *strtab, *name;
-	uint32_t st_name, st_value; // , st_size;
-	// uint8_t st_info, st_other;
-	// uint16_t st_shndx;
+	const char *strtab;
+	uint32_t st_name, st_value;
+	static const char *cache_name=NULL;
+	static uint32_t cache_value=0;
+
+	if (!name) return 0;
+	if (cache_name && strcmp(name, cache_name) == 0) {
+		if (value) *value = cache_value;
+		return 1;
+	}
+	if (value) *value = 0;
+
+	if (!symtab_section) symtab_section = find_elf_section(".symtab");
+	if (!strtab_section) strtab_section = find_elf_section(".strtab");
+	if (!symtab_section || !strtab_section) return 0;
+
+	section_begin = p = symtab_section->ptr;
+	section_end = section_begin + symtab_section->size;
+	strtab = (const char *)(strtab_section->ptr);
+	while (p + 16 <= section_end) {
+		st_name = GET32(p);
+		st_value = GET32(p);
+		p += 8; // st_size, st_info, st_other, st_shndx
+		if (st_name > strtab_section->size) continue;
+		if (strcmp(name, strtab + st_name) == 0) {
+			cache_name = strtab + st_name;
+			cache_value = st_value;
+			if (value) *value = st_value;
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
+// inspect the symbol table, counting the interrupt vectors
+int elf_teensy_model_id(const unsigned char *elf_unused)
+{
+	uint32_t id;
 	int num;
 	uint64_t mask=0;
 	uint32_t stack=0;
-	uint32_t id=0;
+
+	if (elf_get_symbol("_teensy_model_identifier", &id)) return id;
+	//printf("_teensy_model_identifier not found, looking at other info...\n");
 
 	if (elf_architecture == 83) { // 83=AVR
-		symtab_section = find_elf_section(".symtab");
-		strtab_section = find_elf_section(".strtab");
-		if (!symtab_section || !strtab_section) return 0;
-		section_begin = p = symtab_section->ptr;
-		section_end = section_begin + symtab_section->size;
-		strtab = (const char *)(strtab_section->ptr);
-		while (p + 16 <= section_end) {
-			st_name = GET32(p);
-			st_value = GET32(p);
-			/* st_size = */ GET32(p);
-			/* st_info = */ GET8(p);
-			/* st_other = */ GET8(p);
-			/* st_shndx = */ GET16(p);
-			if (st_name > strtab_section->size) continue;
-			name = strtab + st_name;
-			if (strcmp(name, "__stack") == 0) {
-				//printf(" __stack     : %04X\n", st_value);
-				stack = st_value;
-				continue;
+		if (!elf_get_symbol("__stack", &stack)) return 0;
+		for (num=0; num < 64; num++) {
+			char buf[64];
+			snprintf(buf, sizeof(buf), "__vector_%d", num);
+			if (elf_get_symbol(buf, NULL)) {
+				mask |= ((uint64_t)1 << num);
 			}
-			if (strncmp(name, "__vector_", 9) != 0) continue;
-			if (sscanf(name + 9, "%d", &num) != 1) continue;
-			if (num < 0 || num > 63) return 0;
-			mask |= ((uint64_t)1 << num);
-			//printf(" %-12s: %4d  %16LX\n", name, num, mask);
 		}
-		//printf("elf: stack=%04X, vectors=%16LX", stack, mask);
+		//printf("elf: stack=%04X, vectors=%16llX\n", stack, (long long int)mask);
 		if (stack == 0x02FF && mask == 0x00001FFFFFFEll) return 0x19; // Teensy 1.0
 		if (stack == 0x0AFF && mask == 0x07FFFFFFFFFEll) return 0x1B; // Teensy 2.0
 		if (stack == 0x10FF && mask == 0x003FFFFFFFFEll) return 0x1A; // Teensy++ 1.0
 		if (stack == 0x20FF && mask == 0x003FFFFFFFFEll) return 0x1C; // Teensy++ 2.0
 	}
 	if (elf_architecture == 40) { // 40=ARM
-		symtab_section = find_elf_section(".symtab");
-		strtab_section = find_elf_section(".strtab");
-		if (!symtab_section || !strtab_section) return 0;
-		section_begin = p = symtab_section->ptr;
-		section_end = section_begin + symtab_section->size;
-		strtab = (const char *)(strtab_section->ptr);
-		while (p + 16 <= section_end) {
-			st_name = GET32(p);
-			st_value = GET32(p);
-			/* st_size = */ GET32(p);
-			/* st_info = */ GET8(p);
-			/* st_other = */ GET8(p);
-			/* st_shndx = */ GET16(p);
-			if (st_name > strtab_section->size) continue;
-			name = strtab + st_name;
-			if (strcmp(name, "_teensy_model_identifier") == 0) {
-				//printf(" _teensy_model_identifier = %02X\n", st_value);
-				id = st_value;
-				continue;
-			}
-			if (strcmp(name, "_estack") == 0) {
-				//printf(" _estack     : %04X\n", st_value);
-				stack = st_value;
-				continue;
-			}
-		}
-		if (id > 0) return id; // file directly encode model ID  :-)
-		//if (id == 0x1D) return 131072;  // Teensy 3.0
-		//if (id == 0x1E) return 262144;  // Teensy 3.1
-		//if (id == 0x1F) return 524288;  // Teensy 3.5 (K64)
-		//if (id == 0x20) return 63488;   // Teensy-LC
-		//if (id == 0x21) return 262144;  // Teensy 3.2
-		//if (id == 0x22) return 1048576; // Teensy 3.6 (K66)
-		//if (id == 0x23) return 1572864; // Teensy 4-Beta1 (RT1052)
-		//if (id == 0x24) return 1572864; // Teensy 4-Beta1 (RT1052)
-		//printf("elf: stack=%04X, vectors=%16LX", stack, mask);
+		if (!elf_get_symbol("_estack", &stack)) return 0;
 		if (stack == 0x20002000) return 0x1D;  // Teensy 3.0
 		if (stack == 0x20008000) return 0x21;  // Teensy 3.1 or 3.2
 		if (stack == 0x20020000) return 0x1F;  // Teensy 3.5 (K64), TD 1.41

@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 int elf_teensy_model_id(const unsigned char *elf);
+int elf_get_symbol(const char *name, uint32_t *value);
 int is_elf_binary(uint32_t addr, unsigned int len);
 void get_elf_binary(uint32_t addr, int len, unsigned char *buffer);
 int get_elf_eeprom(uint8_t *buffer, int size);
