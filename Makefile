@@ -3,8 +3,8 @@ CFLAGS = -Wall -O2
 
 all: teensy_size
 
-teensy_size: teensy_size.o teensy_info.o elf.o
+teensy_size: teensy_size.o minimal_elf.o
 	$(CC) -o $@ $^
 
 clean:
-	rm -r *.o teensy_size
+	rm -f *.o teensy_size

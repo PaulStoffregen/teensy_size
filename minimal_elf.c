@@ -4,7 +4,7 @@
 #include <string.h>
 #include <sys/param.h>
 
-#include "elf.h"
+#include "minimal_elf.h"
 
 #define MAX_ELF_SECTIONS 128
 
@@ -387,6 +387,17 @@ int parse_elf(const unsigned char *elf)
 		if (!section) return -8;
 		q += segment_header_size;
 		segment++;
+	}
+	return 0;
+}
+
+uint32_t elf_section_size(const char *name)
+{
+	elf_section_t *section = elf_sections;
+	int i;
+	for (i=0; i < elf_section_count; i++) {
+		if (strcmp(name, section->name) == 0) return section->size;
+		section++;
 	}
 	return 0;
 }

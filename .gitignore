@@ -1,0 +1,7 @@
+teensy_size
+teensy_size.exe
+*.o
+*.hex
+*.elf
+*~
+*.swp
