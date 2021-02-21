@@ -79,7 +79,6 @@ int main(int argc, char **argv)
 
 		uint32_t flash_total = text_headers + text_code + text_progmem
 			+ text_itcm + arm_exidx + data + text_csf;
-		//float flash_percent = (float)(flash_total * 100) / (float)flash_size(model);
 		uint32_t flash_headers = text_headers + text_csf;
 		uint32_t flash_code = text_code + text_itcm + arm_exidx;
 		uint32_t flash_data = text_progmem + data;
@@ -90,29 +89,27 @@ int main(int argc, char **argv)
 		uint32_t dtcm = data + bss;
 		uint32_t ram2 = bss_dma;
 
-		printf(" FLASH: ");
-		printf("code:%u, ", flash_code);
-		printf("data:%u, ", flash_data);
-		printf("headers:%u  ", flash_headers);
-		//printf(" (%.2f%% used)\n", flash_percent);
-		printf(" free for files:%u", flash_size(model) - flash_total);
-		printf("\n");
+		const char *prefix = "teensy_size: ";
 
-		printf("  RAM1: ");
-		printf("code:%u, ", itcm_total);
-		printf("variables:%u  ", dtcm);
-		printf(" free for local variables:%u", 512*1024 - itcm_total - dtcm);
-		printf("\n");
-
-		printf("  RAM2: ");
-		printf("variables:%u  ", ram2);
-		printf(" free for malloc/new:%u", 512*1024 - ram2);
-		printf("\n");
-
+		fprintf(stderr,
+			"%sMemory Usage on %s:\n", prefix, model_name(model));
+		fprintf(stderr,
+			"%s  FLASH: code:%u, data:%u, headers:%u   free for files:%u\n", prefix,
+			flash_code, flash_data, flash_headers, flash_size(model) - flash_total);
+		fprintf(stderr,
+			"%s   RAM1: code:%u, variables:%u   free for local variables:%u\n",
+			prefix, itcm_total, dtcm, 512*1024 - itcm_total - dtcm);
+		fprintf(stderr,
+			"%s   RAM2: variables:%u  free for malloc/new:%u\n", prefix,
+			ram2, 512*1024 - ram2);
 		if (model == 0x25) {
 			uint32_t bss_extram = elf_section_size(".bss.extram");
-			if (bss_extram > 0) printf("EXTRAM: variables:%u\n", bss_extram);
+			if (bss_extram > 0) {
+				fprintf(stderr,
+					"%s EXTRAM: variables:%u\n", prefix, bss_extram);
+			}
 		}
+		fflush(stderr);
 	}
 
 	free(filedata);
