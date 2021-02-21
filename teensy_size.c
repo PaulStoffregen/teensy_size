@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 	fseek(fp, 0, SEEK_END);
 	size_t filesize = ftell(fp);
 	filedata = malloc(filesize);
-	if (!filedata) die("unable to allocate %ld bytes\n", filesize);
+	if (!filedata) die("unable to allocate %ld bytes\n", (long)filesize);
 	rewind(fp);
 	if (fread(filedata, 1, filesize, fp) != filesize)  die("Unable to read %s\n", filename);
 	fclose(fp);
