@@ -44,6 +44,7 @@ uint32_t flash_size(int model)
 
 int main(int argc, char **argv)
 {
+	int retval = 0;
 	if (argc < 2) die("usage: teensy_size <file.elf>\n");
 	const char *filename = argv[1];
 	fp = fopen(filename, "rb");
@@ -89,19 +90,25 @@ int main(int argc, char **argv)
 		uint32_t dtcm = data + bss;
 		uint32_t ram2 = bss_dma;
 
+		int32_t free_flash = (int32_t)flash_size(model) - (int32_t)flash_total;
+		int32_t free_for_local = 512*1024 - (int32_t)itcm_total - (int32_t)dtcm;
+		int32_t free_for_malloc = (int32_t)512*1024 - (int32_t)ram2;
+
+		if ((free_flash < 0) || (free_for_local <= 0) || (free_for_malloc < 0)) retval = -1;
+
 		const char *prefix = "teensy_size: ";
 
 		fprintf(stderr,
 			"%sMemory Usage on %s:\n", prefix, model_name(model));
 		fprintf(stderr,
-			"%s  FLASH: code:%u, data:%u, headers:%u   free for files:%u\n", prefix,
-			flash_code, flash_data, flash_headers, flash_size(model) - flash_total);
+			"%s  FLASH: code:%u, data:%u, headers:%u   free for files:%d\n", prefix,
+			flash_code, flash_data, flash_headers, free_flash);
 		fprintf(stderr,
-			"%s   RAM1: code:%u, variables:%u   free for local variables:%u\n",
-			prefix, itcm_total, dtcm, 512*1024 - itcm_total - dtcm);
+			"%s   RAM1: code:%u, variables:%u   free for local variables:%d\n",
+			prefix, itcm_total, dtcm, free_for_local);
 		fprintf(stderr,
-			"%s   RAM2: variables:%u  free for malloc/new:%u\n", prefix,
-			ram2, 512*1024 - ram2);
+			"%s   RAM2: variables:%u  free for malloc/new:%d\n", prefix,
+			ram2, free_for_malloc);
 		if (model == 0x25) {
 			uint32_t bss_extram = elf_section_size(".bss.extram");
 			if (bss_extram > 0) {
@@ -109,11 +116,14 @@ int main(int argc, char **argv)
 					"%s EXTRAM: variables:%u\n", prefix, bss_extram);
 			}
 		}
+		if (retval != 0) {
+			fprintf(stderr,"Error program exceeds memory space\n");
+		}
 		fflush(stderr);
 	}
 
 	free(filedata);
-	return 0;
+	return retval;
 }
 
 
