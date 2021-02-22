@@ -94,23 +94,19 @@ int main(int argc, char **argv)
 		int32_t free_for_local = 512*1024 - (int32_t)itcm_total - (int32_t)dtcm;
 		int32_t free_for_malloc = (int32_t)512*1024 - (int32_t)ram2;
 
-		char *prefix = "teensy_size: ";
-		if ((free_flash < 0) || (free_for_local <= 0) || (free_for_malloc < 0)) {
-			retval = -1;
-			prefix = "";
-		}
-
+		const char *prefix = "teensy_size: ";
+		if ((free_flash < 0) || (free_for_local <= 0) || (free_for_malloc < 0)) retval = -1;
 
 		fprintf(stderr,
 			"%sMemory Usage on %s:\n", prefix, model_name(model));
 		fprintf(stderr,
-			"%s  FLASH: code:%u, data:%u, headers:%u   free for files:%d\n", prefix,
+			"%s  FLASH: code:%u, data:%u, headers:%u   free for files:%d\n", (free_flash < 0) ? "" : prefix,
 			flash_code, flash_data, flash_headers, free_flash);
 		fprintf(stderr,
-			"%s   RAM1: code:%u, variables:%u   free for local variables:%d\n",
-			prefix, itcm_total, dtcm, free_for_local);
+			"%s   RAM1: code:%u, variables:%u   free for local variables:%d\n",	(free_for_local <= 0) ? "" : prefix,
+			 itcm_total, dtcm, free_for_local);
 		fprintf(stderr,
-			"%s   RAM2: variables:%u  free for malloc/new:%d\n", prefix,
+			"%s   RAM2: variables:%u  free for malloc/new:%d\n", (free_for_malloc < 0) ? "" : prefix,
 			ram2, free_for_malloc);
 		if (model == 0x25) {
 			uint32_t bss_extram = elf_section_size(".bss.extram");
