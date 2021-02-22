@@ -94,9 +94,12 @@ int main(int argc, char **argv)
 		int32_t free_for_local = 512*1024 - (int32_t)itcm_total - (int32_t)dtcm;
 		int32_t free_for_malloc = (int32_t)512*1024 - (int32_t)ram2;
 
-		if ((free_flash < 0) || (free_for_local <= 0) || (free_for_malloc < 0)) retval = -1;
+		char *prefix = "teensy_size: ";
+		if ((free_flash < 0) || (free_for_local <= 0) || (free_for_malloc < 0)) {
+			retval = -1;
+			prefix = "";
+		}
 
-		const char *prefix = "teensy_size: ";
 
 		fprintf(stderr,
 			"%sMemory Usage on %s:\n", prefix, model_name(model));
