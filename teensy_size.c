@@ -103,8 +103,8 @@ int main(int argc, char **argv)
 			"%s  FLASH: code:%u, data:%u, headers:%u   free for files:%d\n", (free_flash < 0) ? "" : prefix,
 			flash_code, flash_data, flash_headers, free_flash);
 		fprintf(stderr,
-			"%s   RAM1: code:%u, variables:%u   free for local variables:%d\n",	(free_for_local <= 0) ? "" : prefix,
-			 itcm_total, dtcm, free_for_local);
+			"%s   RAM1: code:%u (%u used), variables:%u   free for local variables:%d\n",	(free_for_local <= 0) ? "" : prefix,
+			 itcm_total, itcm, dtcm, free_for_local);
 		fprintf(stderr,
 			"%s   RAM2: variables:%u  free for malloc/new:%d\n", (free_for_malloc < 0) ? "" : prefix,
 			ram2, free_for_malloc);
