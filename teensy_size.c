@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 	//print_elf_info();
 	//printf("Teensy Model is %02X (%s)\n", model, model_name(model));
 
-	if (model == 0x24 || model == 0x25 || model == 26) {
+	if (model == 0x24 || model == 0x25 || model == 0x26) {
 
 		uint32_t text_headers = elf_section_size(".text.headers");
 		uint32_t text_code = elf_section_size(".text.code");
