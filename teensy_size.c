@@ -87,6 +87,7 @@ int main(int argc, char **argv)
 		uint32_t itcm = text_itcm + arm_exidx;
 		uint32_t itcm_blocks = (itcm + 0x7FFF) >> 15;
 		uint32_t itcm_total = itcm_blocks * 32768;
+		uint32_t itcm_padding = itcm_total - itcm;
 		uint32_t dtcm = data + bss;
 		uint32_t ram2 = bss_dma;
 
@@ -100,13 +101,16 @@ int main(int argc, char **argv)
 		fprintf(stderr,
 			"%sMemory Usage on %s:\n", prefix, model_name(model));
 		fprintf(stderr,
-			"%s  FLASH: code:%u, data:%u, headers:%u   free for files:%d\n", (free_flash < 0) ? "" : prefix,
+			"%s  FLASH: code:%u, data:%u, headers:%u   free for files:%d\n",
+			(free_flash < 0) ? "" : prefix,
 			flash_code, flash_data, flash_headers, free_flash);
 		fprintf(stderr,
-			"%s   RAM1: code:%u, variables:%u   free for local variables:%d\n",	(free_for_local <= 0) ? "" : prefix,
-			 itcm_total, dtcm, free_for_local);
+			"%s   RAM1: variables:%u, code:%u, padding:%u   free for local variables:%d\n",
+			(free_for_local <= 0) ? "" : prefix,
+			dtcm, itcm, itcm_padding, free_for_local);
 		fprintf(stderr,
-			"%s   RAM2: variables:%u  free for malloc/new:%d\n", (free_for_malloc < 0) ? "" : prefix,
+			"%s   RAM2: variables:%u  free for malloc/new:%d\n",
+			(free_for_malloc < 0) ? "" : prefix,
 			ram2, free_for_malloc);
 		if (model == 0x25) {
 			uint32_t bss_extram = elf_section_size(".bss.extram");
