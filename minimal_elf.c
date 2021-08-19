@@ -6,7 +6,7 @@
 
 #include "minimal_elf.h"
 
-#define MAX_ELF_SECTIONS 128
+#define MAX_ELF_SECTIONS 1024
 
 typedef struct {
 	const unsigned char *ptr;
