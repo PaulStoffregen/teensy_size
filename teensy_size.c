@@ -135,7 +135,7 @@ void die(const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	fprintf(stderr, "mktinyfat: ");
+	fprintf(stderr, "teensy_size: ");
 	vfprintf(stderr, format, args);
 	va_end(args);
 	if (fp) fclose(fp);
