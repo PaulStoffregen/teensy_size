@@ -383,11 +383,14 @@ int parse_elf(const unsigned char *elf)
                 segment->flags = GET32(p);
                 segment->alignment = GET32(p);
 		segment->ptr = elf + segment->offset;
-                section = elf_find_section_by_segment(segment);
-		if (!section) return -8;
+		if (segment->file_size > 0) {
+			section = elf_find_section_by_segment(segment);
+			if (!section) return -8;
+		}
 		q += segment_header_size;
 		segment++;
 	}
+	//print_elf_info();
 	return 0;
 }
 
