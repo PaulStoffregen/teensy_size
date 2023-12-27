@@ -57,7 +57,8 @@ int main(int argc, char **argv)
 	if (fread(filedata, 1, filesize, fp) != filesize)  die("Unable to read %s\n", filename);
 	fclose(fp);
 	fp = NULL;
-	if (parse_elf(filedata) != 0) die("Unable to parse %s\n", filename);
+	int r = parse_elf(filedata);
+	if (r != 0) die("Unable to parse %s, err = %d\n", filename, r);
 
 
 	int model = elf_teensy_model_id(filedata);
@@ -95,34 +96,41 @@ int main(int argc, char **argv)
 		int32_t free_for_local = 512*1024 - (int32_t)itcm_total - (int32_t)dtcm;
 		int32_t free_for_malloc = (int32_t)512*1024 - (int32_t)ram2;
 
-		const char *prefix = "teensy_size: ";
 		if ((free_flash < 0) || (free_for_local <= 0) || (free_for_malloc < 0)) retval = -1;
 
-		fprintf(stderr,
+		FILE *fout = stderr; // Arduino 1.8.x discards info unless stderr
+		const char *prefix = "teensy_size: ";
+		const char *ardua = getenv("ARDUINO_USER_AGENT");
+		if (ardua && strstr(ardua, "arduino-cli")) {
+			prefix = "";
+			if (retval == 0) fout = stdout;
+		}
+
+		fprintf(fout,
 			"%sMemory Usage on %s:\n", prefix, model_name(model));
-		fprintf(stderr,
+		fprintf(fout,
 			"%s  FLASH: code:%u, data:%u, headers:%u   free for files:%d\n",
 			(free_flash < 0) ? "" : prefix,
 			flash_code, flash_data, flash_headers, free_flash);
-		fprintf(stderr,
+		fprintf(fout,
 			"%s   RAM1: variables:%u, code:%u, padding:%u   free for local variables:%d\n",
 			(free_for_local <= 0) ? "" : prefix,
 			dtcm, itcm, itcm_padding, free_for_local);
-		fprintf(stderr,
+		fprintf(fout,
 			"%s   RAM2: variables:%u  free for malloc/new:%d\n",
 			(free_for_malloc < 0) ? "" : prefix,
 			ram2, free_for_malloc);
 		if (model == 0x25) {
 			uint32_t bss_extram = elf_section_size(".bss.extram");
 			if (bss_extram > 0) {
-				fprintf(stderr,
+				fprintf(fout,
 					"%s EXTRAM: variables:%u\n", prefix, bss_extram);
 			}
 		}
 		if (retval != 0) {
-			fprintf(stderr,"Error program exceeds memory space\n");
+			fprintf(fout,"Error program exceeds memory space\n");
 		}
-		fflush(stderr);
+		fflush(fout);
 	}
 
 	free(filedata);
