@@ -137,6 +137,11 @@ int main(int argc, char **argv)
 			fout = stderr;
 			prefix = "teensy_size: "; // trick to print in white text
 		}
+		if (getenv("TEENSY_SIZE_FORCE_STDOUT") != NULL) {
+			// https://github.com/PaulStoffregen/teensy_size/issues/7
+			fout = stdout;
+			prefix = "";
+		}
 	}
 
 	// read and parse ELF data
